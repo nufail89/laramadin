@@ -12,13 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('t_usr_lembaga', function (Blueprint $table) {
-            $table->integer('id')->primary();
+            $table->bigInteger('induk');
             $table->unsignedInteger('user_id');
             $table->unsignedInteger('lembaga_id');
             $table->integer('person_id');
             $table->unsignedInteger('jabatan_id');
             $table->boolean('isActive');
             $table->timestamps(); // Add created_at and updated_at columns
+            $table->primary(['lembaga_id', 'induk']);
 
             // Indexes
             $table->index('jabatan_id', 'FK_t_usr_lembaga_t_jabatan');
