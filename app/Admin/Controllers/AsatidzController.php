@@ -2,11 +2,15 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\Jabatan;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use OpenAdmin\Admin\Auth\Database\Administrator;
 use OpenAdmin\Admin\Controllers\AdminController;
 use OpenAdmin\Admin\Form;
 use OpenAdmin\Admin\Grid;
 use OpenAdmin\Admin\Show;
-use \App\Models\Asatidz;
 use \App\Models\TUsrPerson;
 use SebastianBergmann\Type\FalseType;
 
@@ -30,6 +34,7 @@ class AsatidzController extends AdminController
         $lembaga_id = TUsrPerson::where('user_id', $user->id)->pluck('lembaga_id')->first();
         $grid = new Grid(new TUsrPerson());
         $grid->model()->where('lembaga_id', $lembaga_id);
+        $grid->column('induk', __('Induk'));
         $grid->column('asatidz.nama', __('Nama'));
         $grid->column('asatidz.nickname', __('Nickname'));
         $grid->column('asatidz.no_hp', __('No hp'));
@@ -45,6 +50,7 @@ class AsatidzController extends AdminController
         $grid->column('asatidz.no_sk', __('No sk'))->hide();
         $grid->column('asatidz.foto_url', __('Foto url'))->hide();
         $grid->column('asatidz.rek_kjks', __('Rek kjks'))->hide();
+        $grid->column('lembaga_id', __('id Lembaga'))->hide();
         $grid->column('isActive', __('Status Aktif'))->display(function ($isActive) {
             return $isActive ? 'Aktif' : 'Non Aktif';
         })->hide();
@@ -52,8 +58,6 @@ class AsatidzController extends AdminController
             $grid->disableCreateButton();
             $grid->disableActions();
         }
-        // $grid->column('created_at', __('Created at'));
-        // $grid->column('updated_at', __('Updated at'));
         // Tambahkan quick search
         $grid->quickSearch('nama', 'nickname');
         $grid->disableFilter();
@@ -68,25 +72,25 @@ class AsatidzController extends AdminController
      */
     protected function detail($id)
     {
-        $show = new Show(Asatidz::findOrFail($id));
-
-        $show->field('id', __('Id'));
-        $show->field('nama', __('Nama'));
-        $show->field('nickname', __('Nickname'));
-        $show->field('no_hp', __('No hp'));
-        $show->field('gender', __('Gender'));
-        $show->field('alamat', __('Alamat'));
-        $show->field('tempat_lahir', __('Tempat lahir'));
-        $show->field('tanggal_lahir', __('Tanggal lahir'));
-        $show->field('TMT', __('TMT'));
-        $show->field('gelar_depan', __('Gelar depan'));
-        $show->field('gelar_belakang', __('Gelar belakang'));
-        $show->field('status_kawin', __('Status kawin'));
-        $show->field('no_sk', __('No sk'));
-        $show->field('foto_url', __('Foto url'));
-        $show->field('rek_kjks', __('Rek kjks'));
-        $show->field('created_at', __('Created at'));
-        $show->field('updated_at', __('Updated at'));
+        $show = new Show(TUsrPerson::findOrFail($id));
+        $show->field('induk', __('No. Induk'));
+        $show->field('asatidz.nama', __('Nama'));
+        $show->field('asatidz.nickname', __('Nickname'));
+        $show->field('asatidz.no_hp', __('No hp'));
+        $show->field('asatidz.gender', __('Gender'));
+        $show->field('asatidz.alamat', __('Alamat'));
+        $show->field('asatidz.tempat_lahir', __('Tempat lahir'));
+        $show->field('asatidz.tanggal_lahir', __('Tanggal lahir'));
+        $show->field('asatidz.TMT', __('TMT'));
+        $show->field('asatidz.gelar_depan', __('Gelar depan'));
+        $show->field('asatidz.gelar_belakang', __('Gelar belakang'));
+        $show->field('asatidz.status_kawin', __('Status kawin'));
+        $show->field('asatidz.no_sk', __('No sk'));
+        $show->field('asatidz.foto_url', __('Foto url'));
+        $show->field('asatidz.rek_kjks', __('Rek kjks'));
+        $show->field('user.username', __('Username'));
+        // $show->field('created_at', __('Created at'));
+        // $show->field('updated_at', __('Updated at'));
 
         return $show;
     }
@@ -96,25 +100,63 @@ class AsatidzController extends AdminController
      *
      * @return Form
      */
-    protected function form()
-    {
-        $form = new Form(new Asatidz());
+    
+     protected function form(){
+        $attribut = $this->ambilAtribut();
+        $form = new Form(new TUsrPerson());
+        $form->text('induk', __('Induk'))->default($attribut['induk'])->disable();
+        $form->text('asatidz.nama', __('Nama'))->required();
+        $form->text('asatidz.nik', __('NIK'))->required();
+        $form->text('asatidz.nickname', __('Nama Panggilan'));
+        $form->text('asatidz.no_hp', __('No hp'));
+        $form->radio('asatidz.gender', __('Gender'))->options(['L' => 'Laki-laki', 'P' => 'Perempuan'])->default('L');
+        $form->radio('asatidz.status_kawin', __('Status Perkawinan'))->options(['Kawin' => 'Kawin', 'Belum Kawin' => 'Belum Kawin'])->default('Belum Kawin');
+        $form->textarea('asatidz.alamat', __('Alamat'));
+        $form->text('asatidz.tempat_lahir', __('Tempat lahir'));
+        $form->date('asatidz.tanggal_lahir', __('Tanggal lahir'))->default(date('1990-01-01'));
+        $form->date('asatidz.TMT', __('TMT'))->default(date('Y-m-d'));
+        $form->text('asatidz.gelar_depan', __('Gelar depan'));
+        $form->text('asatidz.gelar_belakang', __('Gelar belakang'));
+        $form->text('asatidz.no_sk', __('No sk'));
+        $form->text('asatidz.foto_url', __('Foto url'));
+        $form->text('asatidz.rek_kjks', __('Rek kjks'));
+        $jabatans = Jabatan::all()->pluck('jabatan','id')->toArray();
+        $options = ['' => 'Pilih Jabatan...'] + $jabatans;
+        $form->select('jabatan_id', __('Jabatan'))->options($options);
+        $form->radio('isActive', __('Status Aktif'))->options(['1' => 'Aktif', '2' => 'Non Aktif'])->default('1');
+        $form->disableReset(true);
 
-        $form->text('nama', __('Nama'));
-        $form->text('nickname', __('Nickname'));
-        $form->text('no_hp', __('No hp'));
-        $form->text('gender', __('Gender'))->default('L');
-        $form->textarea('alamat', __('Alamat'));
-        $form->text('tempat_lahir', __('Tempat lahir'));
-        $form->date('tanggal_lahir', __('Tanggal lahir'))->default(date('Y-m-d'));
-        $form->date('TMT', __('TMT'))->default(date('Y-m-d'));
-        $form->text('gelar_depan', __('Gelar depan'));
-        $form->text('gelar_belakang', __('Gelar belakang'));
-        $form->text('status_kawin', __('Status kawin'))->default('Kawin');
-        $form->text('no_sk', __('No sk'));
-        $form->text('foto_url', __('Foto url'));
-        $form->text('rek_kjks', __('Rek kjks'));
-
+        //hiden form
+        $form->hidden('person_id')->default('2');
+        $form->saving(function (Form $form) {
+            $attribut = $this->ambilAtribut();
+            $form->induk=$attribut['induk'];
+            $form->lembaga_id=$attribut['lembaga_id'];
+            dd($form);
+            $admin = Administrator::create([
+                'username' => $form->lembaga_id.$form->induk,
+                'password' => Hash::make($form->asatidz['tanggal_lahir']),
+                'name'     => $form->asatidz['nama'],
+            ]);
+            $form->user_id=$admin->id;
+        });
         return $form;
+    }
+    private function ambilAtribut(){
+        $user = \Auth::user();
+        $lembaga_id = TUsrPerson::where('user_id', $user->id)->pluck('lembaga_id')->first();
+        $year = now()->format('Y');
+        $month = now()->format('m');
+        $lastInduk = TUsrPerson::where('lembaga_id', $lembaga_id)->orderBy('induk', 'desc')->limit(1)->value('induk');
+        // $lastUserId = User::max('id');
+        if ($lastInduk) {
+            $lastNumber = (int) substr($lastInduk, -3);
+            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '001';
+        }
+        $addInduk = $year . $month . $newNumber;
+        $attribut = ['induk'=> $addInduk, 'lembaga_id'=>$lembaga_id];
+        return $attribut;
     }
 }
