@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OpenAdmin\Admin\Auth\Database\Administrator;
 
 class TUsrPerson extends Model
 {
@@ -45,6 +46,6 @@ class TUsrPerson extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Administrator::class, 'user_id');
     }
 }

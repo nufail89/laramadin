@@ -4,6 +4,7 @@ namespace App\Api;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -45,6 +46,8 @@ class AuthController extends Controller
         if ($this->guard()->attempt($credentials, $remember)) {
             RateLimiter::clear($rate_limit_key);
             $user = $this->guard()->user();
+            $tUsrPersons = $user->tUsrPerson()->first();
+            dd($tUsrPersons->jabatan_id);
             $token = $user->createToken($user->username, ['guru'], now()->addYear())->plainTextToken;
             return response()->json(['status'=>true,'token' => $token, 'message' => 'Successfully Logged in!']);
         }

@@ -2,6 +2,7 @@
 
 namespace OpenAdmin\Admin\Auth\Database;
 
+use App\Models\TUsrPerson;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
@@ -90,5 +91,9 @@ class Administrator extends Model implements AuthenticatableContract
         $relatedModel = config('admin.database.permissions_model');
 
         return $this->belongsToMany($relatedModel, $pivotTable, 'user_id', 'permission_id');
+    }
+    public function tUsrPerson()
+    {
+        return $this->hasMany(TUsrPerson::class, 'user_id');
     }
 }
