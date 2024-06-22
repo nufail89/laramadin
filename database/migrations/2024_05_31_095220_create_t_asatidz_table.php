@@ -19,6 +19,7 @@ class CreateTAsatidzTable extends Migration
             $table->string('nama',100);
             $table->string('nickname',50)->nullable();
             $table->string('no_hp',20)->nullable();
+            $table->string('email',80)->unique();
             $table->enum('gender',['L', 'P'])->default('L');
             $table->text('alamat')->nullable();
             $table->string('tempat_lahir',100)->nullable();

@@ -47,7 +47,7 @@ class AuthController extends Controller
             RateLimiter::clear($rate_limit_key);
             $user = $this->guard()->user();
             $tUsrPersons = $user->tUsrPerson()->first();
-            dd($tUsrPersons->jabatan_id);
+            // dd($tUsrPersons->jabatan_id);
             $token = $user->createToken($user->username, ['guru'], now()->addYear())->plainTextToken;
             return response()->json(['status'=>true,'token' => $token, 'message' => 'Successfully Logged in!']);
         }

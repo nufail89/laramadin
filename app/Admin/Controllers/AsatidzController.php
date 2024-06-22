@@ -2,9 +2,8 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\Asatidz;
 use App\Models\Jabatan;
-use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use OpenAdmin\Admin\Auth\Database\Administrator;
 use OpenAdmin\Admin\Controllers\AdminController;
@@ -12,7 +11,7 @@ use OpenAdmin\Admin\Form;
 use OpenAdmin\Admin\Grid;
 use OpenAdmin\Admin\Show;
 use \App\Models\TUsrPerson;
-use SebastianBergmann\Type\FalseType;
+use OpenAdmin\Admin\Facades\Admin;
 
 class AsatidzController extends AdminController
 {
@@ -30,18 +29,22 @@ class AsatidzController extends AdminController
      */
     protected function grid()
     {
-        $user = \Auth::user();
-        $lembaga_id = TUsrPerson::where('user_id', $user->id)->pluck('lembaga_id')->first();
+        // $user = \Auth::user();
+        // $lembaga_id = TUsrPerson::where('user_id', $user->id)->pluck('lembaga_id')->first();
+        $user = Admin::guard()->user();
+        $lembaga_id = $user->tUsrPerson()->first()->lembaga_id;
         $grid = new Grid(new TUsrPerson());
+        // dd($grid);
         $grid->model()->where('lembaga_id', $lembaga_id);
         $grid->column('induk', __('Induk'));
-        $grid->column('asatidz.nama', __('Nama'));
+        $grid->column('asatidz.nama', __('Nama'))->sortable();
         $grid->column('asatidz.nickname', __('Nickname'));
         $grid->column('asatidz.no_hp', __('No hp'));
-        $grid->column('asatidz.gender', __('J.Kelamin'));
+        $grid->column('asatidz.email', __('Surel'));
+        $grid->column('asatidz.gender', __('Gender'));
         $grid->column('asatidz.alamat', __('Alamat'))->hide();
-        $grid->column('asatidz.tempat_lahir', __('Tempat lahir'))->hide();
-        $grid->column('asatidz.tanggal_lahir', __('Tanggal lahir'))->hide();
+        $grid->column('asatidz.tempat_lahir', __('Tmpt. lahir'))->hide();
+        $grid->column('asatidz.tanggal_lahir', __('Tgl. lahir'))->hide();
         $grid->column('jabatan.jabatan', __('Jabatan'))->filter('like');
         $grid->column('asatidz.TMT', __('TMT'))->hide();
         $grid->column('asatidz.gelar_depan', __('Gelar depan'))->hide();
@@ -77,6 +80,7 @@ class AsatidzController extends AdminController
         $show->field('asatidz.nama', __('Nama'));
         $show->field('asatidz.nickname', __('Nickname'));
         $show->field('asatidz.no_hp', __('No hp'));
+        $show->field('asatidz.email', __('Surel'));
         $show->field('asatidz.gender', __('Gender'));
         $show->field('asatidz.alamat', __('Alamat'));
         $show->field('asatidz.tempat_lahir', __('Tempat lahir'));
@@ -106,9 +110,12 @@ class AsatidzController extends AdminController
         $form = new Form(new TUsrPerson());
         $form->text('induk', __('Induk'))->default($attribut['induk'])->disable();
         $form->text('asatidz.nama', __('Nama'))->required();
-        $form->text('asatidz.nik', __('NIK'))->required();
+        $form->text('asatidz.nik', __('NIK'))
+            ->attribute('type', 'number')
+            ->required();
         $form->text('asatidz.nickname', __('Nama Panggilan'));
-        $form->text('asatidz.no_hp', __('No hp'));
+        $form->phonenumber('asatidz.no_hp', __('No hp'));
+        $form->email('asatidz.email', __('e-Mail'));
         $form->radio('asatidz.gender', __('Gender'))->options(['L' => 'Laki-laki', 'P' => 'Perempuan'])->default('L');
         $form->radio('asatidz.status_kawin', __('Status Perkawinan'))->options(['Kawin' => 'Kawin', 'Belum Kawin' => 'Belum Kawin'])->default('Belum Kawin');
         $form->textarea('asatidz.alamat', __('Alamat'));
@@ -124,32 +131,36 @@ class AsatidzController extends AdminController
         $options = ['' => 'Pilih Jabatan...'] + $jabatans;
         $form->select('jabatan_id', __('Jabatan'))->options($options);
         $form->radio('isActive', __('Status Aktif'))->options(['1' => 'Aktif', '2' => 'Non Aktif'])->default('1');
-        $form->disableReset(true);
+        $form->disableReset();
 
         //hiden form
         $form->hidden('person_id')->default('2');
         $form->saving(function (Form $form) {
             $attribut = $this->ambilAtribut();
+            dd($form->asatidz['nik']);
             $form->induk=$attribut['induk'];
             $form->lembaga_id=$attribut['lembaga_id'];
-            dd($form);
             $admin = Administrator::create([
                 'username' => $form->lembaga_id.$form->induk,
                 'password' => Hash::make($form->asatidz['tanggal_lahir']),
                 'name'     => $form->asatidz['nama'],
             ]);
             $form->user_id=$admin->id;
+            $asatidz = new Asatidz();
+            $asatidz->nik=$form->nik;
+            // dd($form->user_id);
         });
         return $form;
     }
     private function ambilAtribut(){
-        $user = \Auth::user();
+        $user = Admin::guard()->user();
         $lembaga_id = TUsrPerson::where('user_id', $user->id)->pluck('lembaga_id')->first();
         $year = now()->format('Y');
         $month = now()->format('m');
-        $lastInduk = TUsrPerson::where('lembaga_id', $lembaga_id)->orderBy('induk', 'desc')->limit(1)->value('induk');
+        $lastInduk = TUsrPerson::where('lembaga_id', $lembaga_id)->orderBy('induk', 'desc')->first()->value('induk');
+        $ym = $year . $month . '000';
         // $lastUserId = User::max('id');
-        if ($lastInduk) {
+        if ($lastInduk>$ym) {
             $lastNumber = (int) substr($lastInduk, -3);
             $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
         } else {

@@ -10,6 +10,8 @@ class TUsrPerson extends Model
     protected $table = 't_usr_person';
 
     public $timestamps = true;
+    protected $keyType = 'string';
+    public $incrementing = false; 
     protected $primaryKey = 'id'; // menyatakan kolom id sebagai primary key
 
     // Mendaftarkan event "creating" untuk model
@@ -25,6 +27,7 @@ class TUsrPerson extends Model
             $sub[4] = substr($string,16,4);
             $sub[5] = substr($string,20,12);
             $model->id = implode('-',$sub);
+            // $model->id = $string;
         });
     }
 
